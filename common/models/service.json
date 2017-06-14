@@ -1,0 +1,42 @@
+{
+  "name": "service",
+  "base": "PersistedModel",
+  "idInjection": true,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {
+    "address": {
+      "type": "string",
+      "required": true
+    },
+    "price": {
+      "type": "number"
+    },
+    "informAddress": {
+      "type": "string"
+    }
+  },
+  "validations": [],
+  "relations": {
+    "areas": {
+      "type": "hasMany",
+      "model": "area",
+      "foreignKey": ""
+    },
+    "client": {
+      "type": "belongsTo",
+      "model": "client",
+      "foreignKey": ""
+    }
+  },
+  "acls": [
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$unauthenticated",
+      "permission": "ALLOW"
+    }
+  ],
+  "methods": {}
+}

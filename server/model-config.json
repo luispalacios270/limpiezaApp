@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "sources": [
+      "loopback/common/models",
+      "loopback/server/models",
+      "../common/models",
+      "./models"
+    ],
+    "mixins": [
+      "loopback/common/mixins",
+      "loopback/server/mixins",
+      "../common/mixins",
+      "./mixins"
+    ]
+  },
+  "User": {
+    "dataSource": "limpiezaDB"
+  },
+  "AccessToken": {
+    "dataSource": "limpiezaDB",
+    "public": false
+  },
+  "ACL": {
+    "dataSource": "limpiezaDB",
+    "public": false
+  },
+  "RoleMapping": {
+    "dataSource": "limpiezaDB",
+    "public": false
+  },
+  "Role": {
+    "dataSource": "limpiezaDB",
+    "public": false
+  },
+  "service": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "area": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "item": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "note": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "picture": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "client": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "Supervisor": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  }
+}

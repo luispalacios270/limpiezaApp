@@ -1,0 +1,16 @@
+{
+  "db": {
+    "name": "db",
+    "connector": "memory"
+  },
+  "limpiezaDB": {
+    "host": "ds111622.mlab.com",
+    "port": 11622,
+    "url": "",
+    "database": "limpiezadb",
+    "password": "limpieza1234",
+    "name": "limpiezaDB",
+    "user": "limpieza",
+    "connector": "mongodb"
+  }
+}

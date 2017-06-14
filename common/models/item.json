@@ -1,0 +1,39 @@
+{
+  "name": "item",
+  "base": "PersistedModel",
+  "idInjection": true,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "qualification": {
+      "type": "number"
+    },
+    "finished": {
+      "type": "boolean"
+    }
+  },
+  "validations": [],
+  "relations": {
+    "notes": {
+      "type": "hasMany",
+      "model": "note",
+      "foreignKey": ""
+    },
+    "area": {
+      "type": "belongsTo",
+      "model": "area",
+      "foreignKey": ""
+    }
+  },
+  "acls": [{
+    "accessType": "*",
+    "principalType": "ROLE",
+    "principalId": "$unauthenticated",
+    "permission": "ALLOW"
+  }],
+  "methods": {}
+}
