@@ -6,27 +6,38 @@
     "validateUpsert": true
   },
   "properties": {
-    "address": {
-      "type": "string",
-      "required": true
+    "initialDate": {
+      "type": "date",
+      "defaultFn": "now"
     },
-    "price": {
-      "type": "number"
+    "finalDate": {
+      "type": "date"
     },
-    "informAddress": {
-      "type": "string"
+    "finished": {
+      "type": "boolean",
+      "default": false
     }
   },
   "validations": [],
   "relations": {
-    "areas": {
-      "type": "hasMany",
-      "model": "area",
-      "foreignKey": ""
-    },
     "client": {
       "type": "belongsTo",
       "model": "client",
+      "foreignKey": ""
+    },
+    "inspectionsAreas": {
+      "type": "hasMany",
+      "model": "InspectionsArea",
+      "foreignKey": ""
+    },
+    "furnitureInspections": {
+      "type": "hasMany",
+      "model": "furnitureInspection",
+      "foreignKey": ""
+    },
+    "itemInspections": {
+      "type": "hasMany",
+      "model": "ItemInspection",
       "foreignKey": ""
     }
   },

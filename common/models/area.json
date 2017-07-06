@@ -17,9 +17,14 @@
       "model": "item",
       "foreignKey": ""
     },
-    "service": {
+    "client": {
       "type": "belongsTo",
-      "model": "service",
+      "model": "client",
+      "foreignKey": ""
+    },
+    "inspectionsAreas": {
+      "type": "hasMany",
+      "model": "InspectionsArea",
       "foreignKey": ""
     }
   },

@@ -1,0 +1,32 @@
+{
+  "name": "Furniture",
+  "base": "PersistedModel",
+  "idInjection": true,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "ranking": {
+      "type": "number"
+    }
+  },
+  "validations": [],
+  "relations": {
+    "item": {
+      "type": "belongsTo",
+      "model": "item",
+      "foreignKey": ""
+    },
+    "furnitureInspections": {
+      "type": "hasMany",
+      "model": "furnitureInspection",
+      "foreignKey": ""
+    }
+  },
+  "acls": [],
+  "methods": {}
+}

@@ -1,0 +1,40 @@
+{
+  "name": "furnitureInspection",
+  "base": "PersistedModel",
+  "idInjection": true,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {
+    "qualification": {
+      "type": "number",
+      "default": 0
+    },
+    "notesClient": {
+      "type": "string",
+      "default": ""
+    },
+    "notesInspector": {
+      "type": "string",
+      "default": ""
+    },
+    "notesActionPlan": {
+      "type": "string",
+      "default": ""
+    },
+    "notesAdministrator": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "validations": [],
+  "relations": {
+    "furniture": {
+      "type": "belongsTo",
+      "model": "Furniture",
+      "foreignKey": ""
+    }
+  },
+  "acls": [],
+  "methods": {}
+}

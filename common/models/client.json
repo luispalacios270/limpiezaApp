@@ -7,7 +7,7 @@
   },
   "properties": {
     "address": {
-      "type": "object"
+      "type": "string"
     }
   },
   "validations": [],
@@ -15,6 +15,11 @@
     "services": {
       "type": "hasMany",
       "model": "service",
+      "foreignKey": ""
+    },
+    "areas": {
+      "type": "hasMany",
+      "model": "area",
       "foreignKey": ""
     }
   },

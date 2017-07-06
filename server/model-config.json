@@ -59,5 +59,29 @@
   "Supervisor": {
     "dataSource": "limpiezaDB",
     "public": true
+  },
+  "container": {
+    "dataSource": "files",
+    "public": true
+  },
+  "Furniture": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "InspectionsArea": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "furnitureInspection": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "ItemInspection": {
+    "dataSource": "limpiezaDB",
+    "public": true
+  },
+  "EmailSender": {
+    "dataSource": "Email",
+    "public": true
   }
 }

@@ -12,5 +12,30 @@
     "name": "limpiezaDB",
     "user": "limpieza",
     "connector": "mongodb"
+  },
+  "files": {
+    "name": "files",
+    "connector": "loopback-component-storage",
+    "provider": "filesystem",
+    "root": "storage"
+  },
+  "Email": {
+    "name": "Email",
+    "connector": "mail",
+    "transports": [
+      {
+        "type": "SMTP",
+        "host": "smtp.gmail.com",
+        "secure": true,
+        "port": 465,
+        "tls": {
+          "rejectUnauthorized": false
+        },
+        "auth": {
+          "user": "luiseduardo27000@gmail.com",
+          "pass": "lu27chi10to1992Y"
+        }
+      }
+    ]
   }
 }

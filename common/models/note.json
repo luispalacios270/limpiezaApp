@@ -21,7 +21,7 @@
   "relations": {
     "item": {
       "type": "belongsTo",
-      "model": "item",
+      "model": "ItemInspection",
       "foreignKey": ""
     }
   },

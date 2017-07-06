@@ -27,13 +27,30 @@
       "type": "belongsTo",
       "model": "area",
       "foreignKey": ""
+    },
+    "objects": {
+      "type": "hasMany",
+      "model": "Object",
+      "foreignKey": ""
+    },
+    "furniture": {
+      "type": "hasMany",
+      "model": "Furniture",
+      "foreignKey": ""
+    },
+    "itemInspections": {
+      "type": "hasMany",
+      "model": "ItemInspection",
+      "foreignKey": ""
     }
   },
-  "acls": [{
-    "accessType": "*",
-    "principalType": "ROLE",
-    "principalId": "$unauthenticated",
-    "permission": "ALLOW"
-  }],
+  "acls": [
+    {
+      "accessType": "*",
+      "principalType": "ROLE",
+      "principalId": "$unauthenticated",
+      "permission": "ALLOW"
+    }
+  ],
   "methods": {}
 }
