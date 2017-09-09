@@ -69,7 +69,7 @@ function clientInfoPdf(client, service, name, doc) {
   }).moveDown(12);
 
   //Logo
-  doc.image('logo.png', 246, 125, {
+  doc.image('companyLogo.png', 246, 125, {
     width: 120,
     height: 120
   });
