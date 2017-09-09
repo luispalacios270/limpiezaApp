@@ -2,7 +2,7 @@
 
 var PDFDocument = require('pdfkit');
 var blobStream = require('blob-stream');
-var uuid = require('uuid');
+const uuidv1 = require('uuid/v1');
 var fs = require("fs");
 
 
@@ -62,7 +62,7 @@ function generateItemPdfclientInfo(itemName, subItemName, doc) {
   }).moveDown(spaceBetween);
 }
 
-function clientInfoPdf(client, service, doc, cb) {
+function clientInfoPdf(client, service, name, doc) {
   // Title
   doc.fontSize(15).text('REPORTE DE INSPECCIÓN', {
     align: 'center'
@@ -77,10 +77,10 @@ function clientInfoPdf(client, service, doc, cb) {
   // doc.moveDown(9);
 
   generateItemPdfclientInfo('CLIENTE', client.realm, doc);
-  generateItemPdfclientInfo('INSPECTOR', 'nombre del inspector', doc);
+  generateItemPdfclientInfo('PERSONA QUE FIRMA', name, doc);
   generateItemPdfclientInfo('DIRECCIÓN', client.address, doc);
-  generateItemPdfclientInfo('FECHA DE INICIO', service.initialDate, doc);
-  generateItemPdfclientInfo('FECHA DE FINLIZACIÓN', service.finalDate, doc);
+  generateItemPdfclientInfo('FECHA DE INICIO', String(new Date(service.initialDate)), doc);
+  generateItemPdfclientInfo('FECHA DE FINLIZACIÓN', String(new Date(service.finalDate)), doc);
 }
 
 function getQualification(option) {
@@ -105,28 +105,6 @@ function getQualification(option) {
 
 }
 
-function areaInfoPdf(doc, result) {
-
-
-
-  doc.addPage();
-  doc.fontSize(18)
-    .text('Area Name', {
-      align: 'center'
-    })
-    .moveDown();
-
-  doc.fontSize(15)
-    .text('Item Name', {
-      align: 'center'
-    })
-    .moveDown();
-
-  doc.fontSize(12)
-    .text('FurnitureName')
-    .moveDown();
-
-}
 
 function sortListSummary(list, cb) {
   var auxList = [];
@@ -288,27 +266,66 @@ function fillDocument(resultArray, doc) {
   });
 }
 
-function createPdfDocument(service, client, resultArray, sigantureClient, sigantureInspector, cb) {
-  let doc = new PDFDocument();
-  doc.pipe(fs.createWriteStream(`storage/pdf/${service.id}.pdf`));
-  clientInfoPdf(client, service, doc);
-  fillDocument(resultArray, doc);
+function base64ToImage(base64Img) {
+  const base64Data = base64Img.replace(/^data:image\/png;base64,/, "");
+  return base64Data;
+  // var filePath = "storage/" + container + "/" + fileName;
+}
 
-  doc.end();
+function fillSignatures(signatureClient, signatureInspector, doc) {
+  const signatureClientImage = base64ToImage(signatureClient);
+  const signatureInspectorImage = base64ToImage(signatureInspector);
+  // let filePath = '';
+  const fileNameClientImage = `${uuidv1()}.png`;
+  const fileNameInspectorImage = `${uuidv1()}.png`;
 
-  cb(null, "ok");
-  /* stream.on('finish', () => {
-    var blobEx = stream.toBlob('application/pdf');
-    console.log(blobEx);
-    cb(null, blobEx);
-  }) */
+  const filePathClient = `tmp/${fileNameClientImage}`;
+  fs.writeFileSync(filePathClient, signatureClientImage, 'base64');
+
+  const filePathInspector = `tmp/${fileNameInspectorImage}`;
+  fs.writeFileSync(filePathInspector, signatureInspectorImage, 'base64');
+
+  doc.addPage();
+
+  doc.fontSize(25)
+    .text('Firma del cliente:', 100, 150, {
+      align: 'center'
+    });
+
+  doc.image(`tmp/${fileNameClientImage}`, 110, 190, {
+    width: 400,
+    height: 200
+  });
+
+  doc.text('Firma del inspector:', 100, 420, {
+    align: 'center'
+  });
+
+  doc.image(`tmp/${fileNameInspectorImage}`, 110, 460, {
+    width: 400,
+    height: 200
+  });
+
+  fs.unlink(filePathClient);
+  fs.unlink(filePathInspector);
 
 }
 
+function createPdfDocument(service, client, resultArray, sigantureClient, sigantureInspector, aprobationName, cb) {
+  try {
+    let doc = new PDFDocument();
+    doc.pipe(fs.createWriteStream(`storage/pdf/${service.id}.pdf`));
+    clientInfoPdf(client, service, aprobationName, doc);
+    fillDocument(resultArray, doc);
+    fillSignatures(sigantureClient, sigantureInspector, doc)
+    doc.end();
+    cb(null, "ok");
+  } catch (error) {
+    cb(error);
+  }
+}
+
 module.exports = function (Service) {
-
-
-
   Service.getSummary = (serviceId, clientId, cb) => {
     Service.app.models.area.find({
       where: {
@@ -395,7 +412,7 @@ module.exports = function (Service) {
       } else {
         Service.app.models.client.findById(service.clientId, function (err, client) {
           if (err) return cb(err);
-          createPdfDocument(service, client, result, signatureClient, signatureInspector, cb);
+          createPdfDocument(service, client, result, signatureClient, signatureInspector, aprobationName, cb);
         });
       }
     });
