@@ -235,23 +235,23 @@ function fillDocument(resultArray, doc) {
 
           if (furnitureInspection.notesClient) {
             doc.fontSize(12)
-              .text('Notas del cliente:' + furnitureInspection.notesClient)
+              .text('Notas del cliente: ' + furnitureInspection.notesClient)
               .moveDown(0.65);
           }
 
           if (furnitureInspection.notesAdministrator) {
             doc.fontSize(12)
-              .text('Notas del Administrador:' + furnitureInspection.notesAdministrator)
+              .text('Notas del Administrador: ' + furnitureInspection.notesAdministrator)
               .moveDown(0.65);
           }
           if (furnitureInspection.notesInspector) {
             doc.fontSize(12)
-              .text('Notas del Inspector:' + furnitureInspection.notesInspector)
+              .text('Notas del Inspector: ' + furnitureInspection.notesInspector)
               .moveDown(0.65);
           }
           if (furnitureInspection.notesActionPlan) {
             doc.fontSize(12)
-              .text('Plan de acción:' + furnitureInspection.notesActionPlan)
+              .text('Plan de acción: ' + furnitureInspection.notesActionPlan)
               .moveDown(0.65);
           }
         }
@@ -288,7 +288,7 @@ function fillSignatures(signatureClient, signatureInspector, doc) {
   doc.addPage();
 
   doc.fontSize(25)
-    .text('Firma del cliente:', 100, 150, {
+    .text('Firma del cliente: ', 100, 150, {
       align: 'center'
     });
 
@@ -297,7 +297,7 @@ function fillSignatures(signatureClient, signatureInspector, doc) {
     height: 200
   });
 
-  doc.text('Firma del inspector:', 100, 420, {
+  doc.text('Firma del inspector: ', 100, 420, {
     align: 'center'
   });
 
