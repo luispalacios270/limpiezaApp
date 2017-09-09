@@ -257,7 +257,7 @@ function fillDocument(resultArray, doc) {
         }
 
         addAllPictures(filePath, doc, 'Fotos Antes');
-        addAllPictures(filePath, doc, 'Fotos después');
+        addAllPictures(filePathAfter, doc, 'Fotos después');
 
         // doc.addPage();
       });
