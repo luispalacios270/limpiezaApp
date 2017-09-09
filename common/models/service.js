@@ -2,6 +2,7 @@
 
 var PDFDocument = require('pdfkit');
 var blobStream = require('blob-stream');
+var uuid = require('uuid');
 var fs = require("fs");
 
 
@@ -49,69 +50,64 @@ function checkFurnitures(furnitures, index, itemName, total, done, objectResult,
   }
 }
 
-/*   "id": "596833ecddc4cb1f94c88950",
-    "clientId": "59683323ddc4cb1f94c8893f",
-    "address": "",
-    "price": 0
-  },
-  {
-    "initialDate": "2017-07-14T04:27:46.750Z",
-    "finished": false,
-    "id": "5968486054e1e82fd4285e18", */
-
-function sortListSummary(list, cb) {
-  var auxList = [];
-  var objectResult = {
-    service: {
-      total: 0,
-      done: 0
-    },
-    areas: []
-  };
-  sortAreas(list, objectResult, 0, function (data) {
-    cb(null, data);
-  });
+function generateItemPdfclientInfo(itemName, subItemName, doc) {
+  var spaceBetween = 4;
+  var sizeFontItems = 15;
+  var sizeFontSubItems = 10;
+  doc.fontSize(sizeFontItems).text(itemName, {
+    align: 'center'
+  }).moveDown(0.7);
+  doc.fontSize(sizeFontSubItems).text(subItemName, {
+    align: 'center'
+  }).moveDown(spaceBetween);
 }
 
-function createPdfDocument() {
-  var doc = new PDFDocument();
-  doc.pipe(fs.createWriteStream("file.pdf"));
+function clientInfoPdf(client, service, doc, cb) {
+  // Title
+  doc.fontSize(15).text('REPORTE DE INSPECCIÓN', {
+    align: 'center'
+  }).moveDown(12);
 
-  doc.fontSize(25)
-    .text('Certificado de servicio', {
-      align: 'center'
-    })
-    .moveDown()
-    .moveDown()
-    .moveDown()
-    .moveDown()
-    .moveDown()
-    .moveDown().moveDown();
+  //Logo
+  doc.image('logo.png', 246, 125, {
+    width: 120,
+    height: 120
+  });
 
-  doc.fontSize(20)
-    .text('Información del servicio', {
-      align: 'center'
-    })
-    .moveDown();
+  // doc.moveDown(9);
 
-  doc.fontSize(12)
-    .text('Cliente: Jose Alberto', {
-      align: 'justify'
-    })
-    .moveDown();
-  doc.text('Dirección: Avenida siempre viva', {
-      align: 'justify'
-    })
-    .moveDown();
-  doc.text('Fecha de inicio: 27 de octubre', {
-      align: 'justify'
-    })
-    .moveDown();
-  doc.text('Fecha de finalizacion: 29 de octubre', {
-      align: 'justify'
-    })
-    .moveDown()
-    .moveDown();
+  generateItemPdfclientInfo('CLIENTE', client.realm, doc);
+  generateItemPdfclientInfo('INSPECTOR', 'nombre del inspector', doc);
+  generateItemPdfclientInfo('DIRECCIÓN', client.address, doc);
+  generateItemPdfclientInfo('FECHA DE INICIO', service.initialDate, doc);
+  generateItemPdfclientInfo('FECHA DE FINLIZACIÓN', service.finalDate, doc);
+}
+
+function getQualification(option) {
+  const good = "Buena";
+  const notDefined = "No definida";
+  const bad = "Mala"
+  switch (option) {
+    case 0:
+      return good;
+      break;
+    case 1:
+      return bad;
+      break;
+    case 2:
+      return notDefined;
+      break;
+
+    default:
+      return good;
+      break;
+  }
+
+}
+
+function areaInfoPdf(doc, result) {
+
+
 
   doc.addPage();
   doc.fontSize(18)
@@ -130,25 +126,175 @@ function createPdfDocument() {
     .text('FurnitureName')
     .moveDown();
 
-  doc.addPage();
-  doc.fontSize(25)
-    .text('Firmas', {
-      align: 'center'
-    })
-    .moveDown()
-    .moveDown();
-  doc.fontSize(18)
-    .text('Firma de Inspector', {
-      align: 'center'
-    })
-    .moveDown();
+}
 
-  doc.fontSize(18)
-    .text('Firma de Cliente', {
-      align: 'center'
-    })
-    .moveDown();
+function sortListSummary(list, cb) {
+  var auxList = [];
+  var objectResult = {
+    service: {
+      total: 0,
+      done: 0
+    },
+    areas: []
+  };
+  sortAreas(list, objectResult, 0, function (data) {
+    cb(null, data);
+  });
+}
 
+
+function addAllPictures(filePath, doc, title) {
+  try {
+
+    var pictures = fs.readdirSync(filePath);
+    if (title)
+      doc.text(title + ':')
+      .moveDown(3);
+    var positionX;
+    var positionY;
+    pictures.forEach((picture, index) => {
+      if (index % 2 === 0) {
+        positionX = doc.x;
+        positionY = doc.y;
+        if ((positionY + 225) >= 790) {
+          doc.addPage();
+          positionY = doc.y;
+        }
+      } else {
+        positionX = 330;
+        positionY = doc.y - 225;
+      }
+      doc.image(`${filePath}/${picture}`, positionX, positionY, {
+        width: 225,
+        height: 225
+      });
+    });
+    doc.moveDown(6);
+  } catch (error) {
+    // console.log(error);
+  }
+}
+
+
+
+function fillDocument(resultArray, doc) {
+  resultArray.forEach((area) => {
+    var areaTmp = area.__data;
+    // doc.addPage();
+    // doc.fontSize(16)
+    //   .text(areaTmp.name)
+    //   .moveDown();  
+    doc.addPage();
+    doc.fontSize(18)
+      .text(areaTmp.name)
+      .moveDown(0.65);
+    areaTmp.items.forEach((item) => {
+      var itemTmp = item.__data;
+      /* doc.
+      fontSize(16)
+        .text(itemTmp.name, {
+          align: 'center'
+        })
+        .moveDown(); */
+      doc.fontSize(14)
+        .text(itemTmp.name)
+        .moveDown(0.65);
+
+      itemTmp.furniture.forEach(furniture => {
+        var furnitureTmp = furniture.__data;
+        var furnitureInspection = furnitureTmp.furnitureInspections[0];
+        if (!furnitureInspection) return;
+        var container = `picBefore-${furnitureInspection.id}`;
+        var containerAfter = `picAfter-${furnitureInspection.id}`;
+        var filePath = `storage/${container}`;
+        var filePathAfter = `storage/${containerAfter}`;
+
+        doc.fontSize(14)
+          .text(furnitureTmp.name)
+          .moveDown(0.9);
+
+        var color = '';
+        var qualification = '';
+
+
+        switch (furnitureInspection.qualification) {
+          case 0:
+            color = 'grey';
+            qualification = 'Regular';
+            break;
+
+          case 1:
+            color = 'green';
+            qualification = 'Bueno';
+            break;
+
+          case 2:
+            color = 'red';
+            qualification = 'Malo';
+            break;
+
+          default:
+            break;
+        }
+
+        doc.fontSize(14)
+          .text('Calificación')
+          .moveDown(0.65);
+
+        doc.fontSize(12)
+          .fillColor(color)
+          .text(qualification)
+          .fillColor('black')
+          .moveDown(0.65);
+
+        if (furnitureInspection.notesClient ||
+          furnitureInspection.notesAdministrator ||
+          furnitureInspection.notesInspector ||
+          furnitureInspection.notesActionPlan) {
+          doc.fontSize(14)
+            .text('Notas')
+            .moveDown(0.65);
+
+          if (furnitureInspection.notesClient) {
+            doc.fontSize(12)
+              .text('Notas del cliente:' + furnitureInspection.notesClient)
+              .moveDown(0.65);
+          }
+
+          if (furnitureInspection.notesAdministrator) {
+            doc.fontSize(12)
+              .text('Notas del Administrador:' + furnitureInspection.notesAdministrator)
+              .moveDown(0.65);
+          }
+          if (furnitureInspection.notesInspector) {
+            doc.fontSize(12)
+              .text('Notas del Inspector:' + furnitureInspection.notesInspector)
+              .moveDown(0.65);
+          }
+          if (furnitureInspection.notesActionPlan) {
+            doc.fontSize(12)
+              .text('Plan de acción:' + furnitureInspection.notesActionPlan)
+              .moveDown(0.65);
+          }
+        }
+
+        addAllPictures(filePath, doc, 'Fotos Antes');
+        addAllPictures(filePath, doc, 'Fotos después');
+
+        // doc.addPage();
+      });
+    });
+
+  });
+}
+
+function createPdfDocument(service, client, resultArray, sigantureClient, sigantureInspector, cb) {
+  let doc = new PDFDocument();
+  doc.pipe(fs.createWriteStream(`storage/pdf/${service.id}.pdf`));
+  clientInfoPdf(client, service, doc);
+  fillDocument(resultArray, doc);
+
+  doc.end();
 
   cb(null, "ok");
   /* stream.on('finish', () => {
@@ -161,42 +307,7 @@ function createPdfDocument() {
 
 module.exports = function (Service) {
 
-  Service.sendEmail = function (msg, cb) {
 
-    // send email using Email model of Loopback 
-    Service.app.models.EmailSender.send({
-      to: "luiseduardo27000@hotmail.com",
-      from: "no-replay@gmail.com",
-      subject: "Your custom email subject here",
-      text: "hola como va!!!",
-      html: msg
-    }, function (err, mail) {
-      if (err) {
-        console.log(err);
-        cb(err);
-        return err;
-      } else {
-        console.log(mail);
-        cb(null, mail);
-      }
-    });
-
-  }
-  Service.remoteMethod('sendEmail', {
-    http: {
-      path: '/sendEmail',
-      verb: 'get'
-    },
-    description: ["api para envío de emial."],
-    accepts: {
-      arg: 'msg',
-      type: 'string'
-    },
-    returns: {
-      arg: 'Email',
-      type: 'string'
-    }
-  });
 
   Service.getSummary = (serviceId, clientId, cb) => {
     Service.app.models.area.find({
@@ -252,11 +363,11 @@ module.exports = function (Service) {
     }
   });
 
-  Service.generatePDF = (serviceId, clientId, signatureClient, signatureInspector, clientName, cb) => {
+  Service.generatePDF = (service, signatureClient, signatureInspector, aprobationName, cb) => {
 
     Service.app.models.area.find({
       where: {
-        clientId: clientId
+        clientId: service.clientId
       },
       include: {
         relation: 'items',
@@ -268,7 +379,7 @@ module.exports = function (Service) {
                 relation: "furnitureInspections",
                 scope: {
                   where: {
-                    serviceId: serviceId
+                    serviceId: service.id
                   }
                 }
               }
@@ -282,8 +393,10 @@ module.exports = function (Service) {
         cb(err);
         return;
       } else {
-        (result, cb);
-        // cb(null, result);
+        Service.app.models.client.findById(service.clientId, function (err, client) {
+          if (err) return cb(err);
+          createPdfDocument(service, client, result, signatureClient, signatureInspector, cb);
+        });
       }
     });
   }
@@ -292,15 +405,10 @@ module.exports = function (Service) {
     http: {
       verb: 'post'
     },
-    description: ["api para envío de emial."],
+    // description: ["api para envío de emial."],
     accepts: [{
-      arg: 'serviceId',
-      type: 'string',
-      required: true
-
-    }, {
-      arg: 'clientId',
-      type: 'string',
+      arg: 'service',
+      type: 'object',
       required: true
     }, {
       arg: 'signatureClient',
@@ -311,13 +419,13 @@ module.exports = function (Service) {
       type: 'string',
       required: true
     }, {
-      arg: 'clientName',
+      arg: 'aprobationName',
       type: 'string',
       required: true
     }],
     returns: {
       arg: 'result',
-      type: 'object'
+      type: 'string'
     }
   });
 };
