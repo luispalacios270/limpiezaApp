@@ -62,25 +62,123 @@ function generateItemPdfclientInfo(itemName, subItemName, doc) {
   }).moveDown(spaceBetween);
 }
 
-function clientInfoPdf(client, service, name, doc) {
+function transformToPercent(qualification) {
+  if (qualification == undefined || isNaN(qualification)) return;
+  const resultadoGlobal = String((qualification * 100).toFixed(2)) + "%";
+  return resultadoGlobal;
+}
+
+function clientInfoPdf(client, service, name, doc, information, supervisor) {
   // Title
-  doc.fontSize(15).text('REPORTE DE INSPECCIÓN', {
+  /* doc.fontSize(15).text('REPORTE DE INSPECCIÓN', {
     align: 'center'
-  }).moveDown(12);
+  }).moveDown(12); */
 
   //Logo
-  doc.image('companyLogo.png', 246, 125, {
-    width: 120,
-    height: 120
+  doc.image('companyLogo.png', 10, 10, {
+    width: 60,
+    height: 60
   });
 
-  // doc.moveDown(9);
+  doc.fontSize(14).font('Helvetica-Bold').text('Reporte de Inspección - QC Inspections', 10, 25, {
+    align: 'right'
+  });
 
-  generateItemPdfclientInfo('CLIENTE', client.realm, doc);
-  generateItemPdfclientInfo('PERSONA QUE FIRMA', name, doc);
-  generateItemPdfclientInfo('DIRECCIÓN', client.address, doc);
-  generateItemPdfclientInfo('FECHA DE INICIO', String(new Date(service.initialDate)), doc);
-  generateItemPdfclientInfo('FECHA DE FINLIZACIÓN', String(new Date(service.finalDate)), doc);
+
+  const resultadoGlobal = transformToPercent(information.total);
+
+  doc.fontSize(12).text(`Resultado Global (${resultadoGlobal})`, {
+    align: 'right'
+  });
+
+  doc.fontSize(10).font('Helvetica')
+    .text(`${client.address} - Inspeccionado por: ${supervisor.realm}, ${service.finalDate}`, { align: 'right' }).moveDown();
+
+  doc.lineWidth(2);
+
+  doc.lineCap('butt')
+    .moveTo(10, 75)
+    .lineTo(600, 75)
+    .stroke().moveDown();
+}
+
+function setQualificationPercent(qualification) {
+  if (qualification == undefined) return 0;
+  let qualificationPercent = 0;
+  switch (qualification) {
+    case 0:
+      qualificationPercent = 0.6;
+      break;
+    case 1:
+      qualificationPercent = 1;
+      break;
+    case 2:
+      qualificationPercent = 0.1;
+      break;
+    default:
+      break;
+  }
+  return qualificationPercent;
+
+}
+
+function prepareInformationForPDF(arregloDeAreas) {
+  if (!arregloDeAreas) return;
+  let arregloFinal = {
+    total: 0,
+    areas: []
+  };
+  let countAreas = 0;
+  arregloDeAreas.forEach(area => {
+    const areaTemporal = area.__data;
+    let areaToBeAdded = {
+      name: areaTemporal.name,
+      items: []
+    }
+    let countItems = 0
+    areaTemporal.items.forEach(item => {
+      const itemTemporal = item.__data;
+      let itemToBeAdded = {
+        name: itemTemporal.name,
+        furnitures: []
+      }
+      let countFurnitures = 0;
+      itemTemporal.furniture.forEach(furniture => {
+        const furnitureTemporal = furniture.__data;
+        const furnitureInspection = furnitureTemporal.furnitureInspections[0];
+        if (!furnitureInspection) return;
+        const qualificationFurniture = setQualificationPercent(furnitureInspection.qualification);
+
+        const furnitureToBeAdded = {
+          name: furnitureTemporal.name,
+          qualification: qualificationFurniture
+        }
+
+        itemToBeAdded.furnitures.push(furnitureToBeAdded)
+        countFurnitures += qualificationFurniture;
+      });
+
+      if (itemTemporal.furniture.length > 0) {
+        countFurnitures = countFurnitures / (itemTemporal.furniture.length);
+        itemToBeAdded.qualification = countFurnitures;
+
+        areaToBeAdded.items.push(itemToBeAdded);
+
+        countItems += countFurnitures;
+
+      }
+    });
+    if (areaTemporal.items.length > 0) {
+      countItems = countItems / (areaTemporal.items.length);
+      areaToBeAdded.qualification = countItems;
+      arregloFinal.areas.push(areaToBeAdded);
+      countAreas += countItems;
+    }
+  });
+
+  arregloFinal.total = (countAreas / arregloDeAreas.length);
+
+  return arregloFinal;
 }
 
 function getQualification(option) {
@@ -127,7 +225,7 @@ function addAllPictures(filePath, doc, title) {
     var pictures = fs.readdirSync(filePath);
     if (title)
       doc.text(title + ':')
-      .moveDown(3);
+        .moveDown(3);
     var positionX;
     var positionY;
     pictures.forEach((picture, index) => {
@@ -153,114 +251,199 @@ function addAllPictures(filePath, doc, title) {
   }
 }
 
+function createSummaryPdf(sortedInformation, doc) {
 
+  const initialPositionY = 85;
+  const marginLeft = 10;
+  const marginSubItem = 50;
+  const marginCenter = 150;
 
-function fillDocument(resultArray, doc) {
-  resultArray.forEach((area) => {
-    var areaTmp = area.__data;
-    // doc.addPage();
-    // doc.fontSize(16)
-    //   .text(areaTmp.name)
-    //   .moveDown();  
-    doc.addPage();
-    doc.fontSize(18)
-      .text(areaTmp.name)
+  doc.fontSize(14).font('Helvetica-Bold')
+    .text("Resumen de inspeccion", marginLeft, initialPositionY)
+    .moveDown(0.65);
+
+  doc.fontSize(8).font('Helvetica')
+    .text("Resultado Porcentual", marginCenter)
+    .moveDown(0.65);
+
+  doc.fontSize(12).font('Helvetica-Bold')
+    .text("Resultado Por Áreas", marginLeft)
+    .moveDown();
+
+  sortedInformation.areas.forEach(area => {
+
+    const positionY = doc.y;
+
+    doc.fontSize(10).font('Helvetica-Bold')
+      .text(area.name, (marginLeft + 10), positionY);
+
+    const areaPercent = transformToPercent(area.qualification);
+
+    doc.text(areaPercent, marginCenter, positionY)
       .moveDown(0.65);
-    areaTmp.items.forEach((item) => {
-      var itemTmp = item.__data;
-      /* doc.
-      fontSize(16)
-        .text(itemTmp.name, {
-          align: 'center'
-        })
-        .moveDown(); */
-      doc.fontSize(14)
-        .text(itemTmp.name)
-        .moveDown(0.65);
 
-      itemTmp.furniture.forEach(furniture => {
-        var furnitureTmp = furniture.__data;
-        var furnitureInspection = furnitureTmp.furnitureInspections[0];
-        if (!furnitureInspection) return;
-        var container = `picBefore-${furnitureInspection.id}`;
-        var containerAfter = `picAfter-${furnitureInspection.id}`;
-        var filePath = `storage/${container}`;
-        var filePathAfter = `storage/${containerAfter}`;
+    area.items.forEach(item => {
 
-        doc.fontSize(14)
-          .text(furnitureTmp.name)
-          .moveDown(0.9);
+      const positionYItem = doc.y;
 
-        var color = '';
-        var qualification = '';
+      doc.fontSize(6).font('Helvetica')
+        .text(item.name, marginSubItem, positionYItem);
+
+      const itemPercent = transformToPercent(item.qualification);
+
+      doc.text(itemPercent, marginCenter, positionYItem, { align: 'rigth' })
+        .moveDown();
+
+    });
+    doc.moveDown();
+
+  });
+}
 
 
-        switch (furnitureInspection.qualification) {
-          case 0:
-            color = 'grey';
-            qualification = 'Regular';
-            break;
 
-          case 1:
-            color = 'green';
-            qualification = 'Bueno';
-            break;
+function fillDocument(areasArray, doc) {
 
-          case 2:
-            color = 'red';
-            qualification = 'Malo';
-            break;
+  const initialXPosition = 10;
+  const finalXPosition = 480;
+  const yHeaderPosition = 15;
+  const areaXPosition = initialXPosition + 10;
+  const itemXPosition = areaXPosition + 15;
+  const furnitureXPosition = itemXPosition + 15;
 
-          default:
-            break;
-        }
+  doc.addPage();
 
-        doc.fontSize(14)
-          .text('Calificación')
-          .moveDown(0.65);
 
-        doc.fontSize(12)
-          .fillColor(color)
-          .text(qualification)
-          .fillColor('black')
-          .moveDown(0.65);
+  doc.fontSize(15).font('Helvetica-Bold')
+    .text("Detalle de la inspección", initialXPosition, yHeaderPosition);
 
-        if (furnitureInspection.notesClient ||
-          furnitureInspection.notesAdministrator ||
-          furnitureInspection.notesInspector ||
-          furnitureInspection.notesActionPlan) {
-          doc.fontSize(14)
-            .text('Notas')
-            .moveDown(0.65);
+  doc.fontSize(10).font('Helvetica')
+    .text("Resultados", finalXPosition, yHeaderPosition);
 
-          if (furnitureInspection.notesClient) {
-            doc.fontSize(12)
-              .text('Notas del cliente: ' + furnitureInspection.notesClient)
-              .moveDown(0.65);
-          }
+  doc.moveDown();
 
-          if (furnitureInspection.notesAdministrator) {
-            doc.fontSize(12)
-              .text('Notas del Administrador: ' + furnitureInspection.notesAdministrator)
-              .moveDown(0.65);
-          }
-          if (furnitureInspection.notesInspector) {
-            doc.fontSize(12)
-              .text('Notas del Inspector: ' + furnitureInspection.notesInspector)
-              .moveDown(0.65);
-          }
-          if (furnitureInspection.notesActionPlan) {
-            doc.fontSize(12)
-              .text('Plan de acción: ' + furnitureInspection.notesActionPlan)
-              .moveDown(0.65);
-          }
-        }
+  areasArray.areas.forEach((area) => {
 
-        addAllPictures(filePath, doc, 'Fotos Antes');
-        addAllPictures(filePathAfter, doc, 'Fotos después');
+    let currentYPosition = doc.y;
 
-        // doc.addPage();
+    doc.fontSize(13).font('Helvetica-Bold')
+      .text(area.name, areaXPosition, currentYPosition, { underline: true });
+
+    doc.fontSize(10)
+      .text(transformToPercent(area.qualification), finalXPosition, currentYPosition)
+      .moveDown(0.8);
+
+    doc.font('Helvetica');
+
+    area.items.forEach((item) => {
+
+      currentYPosition = doc.y;
+
+      doc.fontSize(10).font('Helvetica-Bold')
+        .text(item.name, itemXPosition, currentYPosition);
+
+      doc.fontSize(8)
+        .text(transformToPercent(item.qualification), finalXPosition, currentYPosition)
+        .moveDown(0.8);
+
+      doc.font('Helvetica');
+
+      item.furnitures.forEach(furniture => {
+
+        currentYPosition = doc.y;
+
+        doc.fontSize(10)
+          .text(furniture.name, furnitureXPosition, currentYPosition);
+
+        doc.fontSize(6)
+          .text(transformToPercent(furniture.qualification), finalXPosition, currentYPosition)
+          .moveDown();
+
+
       });
+
+
+      // itemTmp.furniture.forEach(furniture => {
+      //   var furnitureTmp = furniture.__data;
+      //   var furnitureInspection = furnitureTmp.furnitureInspections[0];
+      //   if (!furnitureInspection) return;
+      //   var container = `picBefore-${furnitureInspection.id}`;
+      //   var containerAfter = `picAfter-${furnitureInspection.id}`;
+      //   var filePath = `storage/${container}`;
+      //   var filePathAfter = `storage/${containerAfter}`;
+
+      //   doc.fontSize(14)
+      //     .text(furnitureTmp.name)
+      //     .moveDown(0.9);
+
+      //   var color = '';
+      //   var qualification = '';
+
+
+      //   switch (furnitureInspection.qualification) {
+      //     case 0:
+      //       color = 'grey';
+      //       qualification = 'Regular';
+      //       break;
+
+      //     case 1:
+      //       color = 'green';
+      //       qualification = 'Bueno';
+      //       break;
+
+      //     case 2:
+      //       color = 'red';
+      //       qualification = 'Malo';
+      //       break;
+
+      //     default:
+      //       break;
+      //   }
+
+      //   doc.fontSize(14)
+      //     .text('Calificación')
+      //     .moveDown(0.65);
+
+      //   doc.fontSize(12)
+      //     .fillColor(color)
+      //     .text(qualification)
+      //     .fillColor('black')
+      //     .moveDown(0.65);
+
+      //   if (furnitureInspection.notesClient ||
+      //     furnitureInspection.notesAdministrator ||
+      //     furnitureInspection.notesInspector ||
+      //     furnitureInspection.notesActionPlan) {
+      //     doc.fontSize(14)
+      //       .text('Notas')
+      //       .moveDown(0.65);
+
+      //     if (furnitureInspection.notesClient) {
+      //       doc.fontSize(12)
+      //         .text('Notas del cliente: ' + furnitureInspection.notesClient)
+      //         .moveDown(0.65);
+      //     }
+
+      //     if (furnitureInspection.notesAdministrator) {
+      //       doc.fontSize(12)
+      //         .text('Notas del Administrador: ' + furnitureInspection.notesAdministrator)
+      //         .moveDown(0.65);
+      //     }
+      //     if (furnitureInspection.notesInspector) {
+      //       doc.fontSize(12)
+      //         .text('Notas del Inspector: ' + furnitureInspection.notesInspector)
+      //         .moveDown(0.65);
+      //     }
+      //     if (furnitureInspection.notesActionPlan) {
+      //       doc.fontSize(12)
+      //         .text('Plan de acción: ' + furnitureInspection.notesActionPlan)
+      //         .moveDown(0.65);
+      //     }
+      //   }
+
+      //   addAllPictures(filePath, doc, 'Fotos Antes');
+      //   addAllPictures(filePathAfter, doc, 'Fotos después');
+      // });
     });
 
   });
@@ -273,6 +456,7 @@ function base64ToImage(base64Img) {
 }
 
 function fillSignatures(signatureClient, signatureInspector, doc) {
+
   const signatureClientImage = base64ToImage(signatureClient);
   const signatureInspectorImage = base64ToImage(signatureInspector);
   // let filePath = '';
@@ -311,14 +495,59 @@ function fillSignatures(signatureClient, signatureInspector, doc) {
 
 }
 
-function createPdfDocument(service, client, resultArray, sigantureClient, sigantureInspector, aprobationName, cb) {
+function putSignature(signatureClient, signatureInspector, pdfDocument) {
+
+  let initialYPositionSignature = 650;
+
+  pdfDocument.y = initialYPositionSignature;
+
+  pdfDocument.lineCap('butt')
+    .moveTo(10, initialYPositionSignature)
+    .lineTo(600, initialYPositionSignature)
+    .stroke().moveDown(7);
+
+  initialYPositionSignature = pdfDocument.y;
+
+  pdfDocument.fontSize(14).text("Firma del cliente: ", 60, initialYPositionSignature);
+  pdfDocument.fontSize(14).text("Firma del inspector: ", 310, initialYPositionSignature);
+
+  const signatureClientImage = base64ToImage(signatureClient);
+  const signatureInspectorImage = base64ToImage(signatureInspector);
+
+  const fileNameClientImage = `${uuidv1()}.png`;
+  const fileNameInspectorImage = `${uuidv1()}.png`;
+
+  const filePathClient = `tmp/${fileNameClientImage}`;
+  fs.writeFileSync(filePathClient, signatureClientImage, 'base64');
+
+  const filePathInspector = `tmp/${fileNameInspectorImage}`;
+  fs.writeFileSync(filePathInspector, signatureInspectorImage, 'base64');
+
+  pdfDocument.image(`tmp/${fileNameClientImage}`, 170, (initialYPositionSignature - 30), {
+    width: 120,
+    height: 60
+  });
+
+  pdfDocument.image(`tmp/${fileNameInspectorImage}`, 445, (initialYPositionSignature - 30), {
+    width: 120,
+    height: 60
+  });
+
+  fs.unlink(filePathClient);
+  fs.unlink(filePathInspector);
+}
+
+function createPdfDocument(service, client, resultArray, sigantureClient, sigantureInspector, aprobationName, supervisor, cb) {
   try {
-    let doc = new PDFDocument();
-    doc.pipe(fs.createWriteStream(`storage/pdf/${service.id}.pdf`));
-    clientInfoPdf(client, service, aprobationName, doc);
-    fillDocument(resultArray, doc);
-    fillSignatures(sigantureClient, sigantureInspector, doc)
-    doc.end();
+    let pdfDocument = new PDFDocument();
+    pdfDocument.pipe(fs.createWriteStream(`storage/pdf/${service.id}.pdf`));
+    const information = prepareInformationForPDF(resultArray);
+    clientInfoPdf(client, service, aprobationName, pdfDocument, information, supervisor);
+    createSummaryPdf(information, pdfDocument);
+    fillDocument(information, pdfDocument);
+    putSignature(sigantureClient, sigantureInspector, pdfDocument);
+    // fillSignatures(sigantureClient, sigantureInspector, doc)
+    pdfDocument.end();
     cb(null, "ok");
   } catch (error) {
     cb(error);
@@ -366,13 +595,13 @@ module.exports = function (Service) {
     },
     description: ["api para envío de emial."],
     accepts: [{
-        arg: 'serviceId',
-        type: 'string'
-      },
-      {
-        arg: 'clientId',
-        type: 'string'
-      }
+      arg: 'serviceId',
+      type: 'string'
+    },
+    {
+      arg: 'clientId',
+      type: 'string'
+    }
     ],
     returns: {
       arg: 'result',
@@ -412,7 +641,10 @@ module.exports = function (Service) {
       } else {
         Service.app.models.client.findById(service.clientId, function (err, client) {
           if (err) return cb(err);
-          createPdfDocument(service, client, result, signatureClient, signatureInspector, aprobationName, cb);
+          Service.app.models.Supervisor.findById(service.supervisorId, function (err, supervisor) {
+            if (err) return cb(err);
+            createPdfDocument(service, client, result, signatureClient, signatureInspector, aprobationName, supervisor, cb);
+          });
         });
       }
     });

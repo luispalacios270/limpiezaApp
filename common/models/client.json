@@ -21,6 +21,11 @@
       "type": "hasMany",
       "model": "area",
       "foreignKey": ""
+    },
+    "supervisor": {
+      "type": "belongsTo",
+      "model": "Supervisor",
+      "foreignKey": ""
     }
   },
   "acls": [

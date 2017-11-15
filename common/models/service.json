@@ -39,6 +39,11 @@
       "type": "hasMany",
       "model": "ItemInspection",
       "foreignKey": ""
+    },
+    "supervisor": {
+      "type": "belongsTo",
+      "model": "Supervisor",
+      "foreignKey": ""
     }
   },
   "acls": [
