@@ -306,6 +306,7 @@ function createSummaryPdf(sortedInformation, doc) {
   let marginLeft = 10;
   let marginSubItem = 50;
   let marginCenter = 150;
+  let counterColumns = 0;
 
   doc
     .fontSize(14)
@@ -329,10 +330,20 @@ function createSummaryPdf(sortedInformation, doc) {
 
   sortedInformation.areas.forEach(area => {
     if (Math.abs(792 - doc.y) < 80) {
-      doc.y = initialPositionYForAreas;
-      marginLeft += 300;
-      marginSubItem += 300;
-      marginCenter += 300;
+      if (counterColumns === 0) {
+        doc.y = initialPositionYForAreas;
+        marginLeft += 300;
+        marginSubItem += 300;
+        marginCenter += 300;
+        counterColumns++;
+      } else if (counterColumns === 1) {
+        doc.addPage();
+        doc.y = initialPositionYForAreas;
+        marginLeft -= 300;
+        marginSubItem -= 300;
+        marginCenter -= 300;
+        counterColumns--;
+      }
     }
     const positionY = doc.y;
     doc
@@ -346,10 +357,20 @@ function createSummaryPdf(sortedInformation, doc) {
 
     area.items.forEach(item => {
       if (Math.abs(792 - doc.y) < 80) {
-        doc.y = initialPositionYForAreas;
-        marginLeft += 300;
-        marginSubItem += 300;
-        marginCenter += 300;
+        if (counterColumns === 0) {
+          doc.y = initialPositionYForAreas;
+          marginLeft += 300;
+          marginSubItem += 300;
+          marginCenter += 300;
+          counterColumns = 1;
+        } else if (counterColumns === 1) {
+          doc.addPage();
+          doc.y = initialPositionYForAreas;
+          marginLeft -= 300;
+          marginSubItem -= 300;
+          marginCenter -= 300;
+          counterColumns = 0;
+        }
       }
       const positionYItem = doc.y;
 
@@ -376,7 +397,14 @@ function fillDocument(areasArray, doc) {
   const itemXPosition = areaXPosition + 15;
   const furnitureXPosition = itemXPosition + 15;
 
-  doc.addPage();
+  doc.addPage({
+    margins: {
+      top: 72,
+      bottom: 0,
+      left: 72,
+      right: 72
+    }
+  });
 
   doc
     .fontSize(15)
@@ -502,6 +530,7 @@ function fillSignatures(signatureClient, signatureInspector, doc) {
 }
 
 function putSignature(signatureClient, signatureInspector, pdfDocument) {
+  const initialPOsitionY = pdfDocument.y;
   let initialYPositionSignature = 650;
 
   pdfDocument.y = initialYPositionSignature;
@@ -510,10 +539,10 @@ function putSignature(signatureClient, signatureInspector, pdfDocument) {
     .lineCap("butt")
     .moveTo(10, initialYPositionSignature)
     .lineTo(600, initialYPositionSignature)
-    .stroke()
-    .moveDown(7);
+    .stroke();
+  // .moveDown(7);
 
-  initialYPositionSignature = pdfDocument.y;
+  initialYPositionSignature = 730;
 
   pdfDocument
     .fontSize(14)
@@ -604,7 +633,14 @@ function createPdfDocument(
   cb
 ) {
   try {
-    let pdfDocument = new PDFDocument();
+    let pdfDocument = new PDFDocument({
+      margins: {
+        top: 72,
+        left: 72,
+        bottom: 0,
+        right: 72
+      }
+    });
     pdfDocument.pipe(fs.createWriteStream(`storage/pdf/${service.id}.pdf`));
     const information = prepareInformationForPDF(resultArray);
     clientInfoPdf(
