@@ -117,7 +117,15 @@ function transformToPercent(qualification) {
   return resultadoGlobal;
 }
 
-function clientInfoPdf(client, service, name, doc, information, supervisor) {
+function clientInfoPdf(
+  client,
+  service,
+  name,
+  doc,
+  information,
+  supervisor,
+  language_json
+) {
   //Logo
   doc.image("companyLogo.png", 10, 10, {
     width: 60,
@@ -127,13 +135,14 @@ function clientInfoPdf(client, service, name, doc, information, supervisor) {
   doc
     .fontSize(14)
     .font("Helvetica-Bold")
-    .text("Reporte de Inspección - QC Inspections", 10, 25, {
+    // .text("Reporte de Inspección - QC Inspections"
+    .text(`${language_json.title} - QC Inspections`, 10, 25, {
       align: "right"
     });
 
   const resultadoGlobal = transformToPercent(information.total);
 
-  doc.fontSize(12).text(`Resultado Global (${resultadoGlobal})`, {
+  doc.fontSize(12).text(`${language_json.globalResult} (${resultadoGlobal})`, {
     align: "right"
   });
 
@@ -141,9 +150,9 @@ function clientInfoPdf(client, service, name, doc, information, supervisor) {
     .fontSize(10)
     .font("Helvetica")
     .text(
-      `${client.address} - Inspeccionado por: ${supervisor.realm}, ${
-        service.finalDate
-      }`,
+      `${client.address} - ${language_json.inspectorInfo}: ${
+        supervisor.realm
+      }, ${service.finalDate}`,
       { align: "right" }
     )
     .moveDown();
@@ -301,7 +310,7 @@ function addAllPictures(filePath, doc, title) {
   }
 }
 
-function createSummaryPdf(sortedInformation, doc) {
+function createSummaryPdf(sortedInformation, doc, language_json) {
   const initialPositionY = 85;
   let marginLeft = 10;
   let marginSubItem = 50;
@@ -311,19 +320,19 @@ function createSummaryPdf(sortedInformation, doc) {
   doc
     .fontSize(14)
     .font("Helvetica-Bold")
-    .text("Resumen de inspeccion", marginLeft, initialPositionY)
+    .text(language_json.inspectionSummary, marginLeft, initialPositionY)
     .moveDown(0.65);
 
   doc
     .fontSize(8)
     .font("Helvetica")
-    .text("Resultado Porcentual", marginCenter)
+    .text(language_json.percentResult, marginCenter)
     .moveDown(0.65);
 
   doc
     .fontSize(12)
     .font("Helvetica-Bold")
-    .text("Resultado Por Áreas", marginLeft)
+    .text(language_json.areasResult, marginLeft)
     .moveDown();
 
   const initialPositionYForAreas = doc.y;
@@ -389,7 +398,7 @@ function createSummaryPdf(sortedInformation, doc) {
   });
 }
 
-function fillDocument(areasArray, doc) {
+function fillDocument(areasArray, doc, language_json) {
   const initialXPosition = 10;
   const finalXPosition = 480;
   const yHeaderPosition = 15;
@@ -409,12 +418,12 @@ function fillDocument(areasArray, doc) {
   doc
     .fontSize(15)
     .font("Helvetica-Bold")
-    .text("Detalle de la inspección", initialXPosition, yHeaderPosition);
+    .text(language_json.detailInspection, initialXPosition, yHeaderPosition);
 
   doc
     .fontSize(10)
     .font("Helvetica")
-    .text("Resultados", finalXPosition, yHeaderPosition);
+    .text(language_json.results, finalXPosition, yHeaderPosition);
 
   doc.moveDown();
 
@@ -529,7 +538,12 @@ function fillSignatures(signatureClient, signatureInspector, doc) {
   fs.unlink(filePathInspector);
 }
 
-function putSignature(signatureClient, signatureInspector, pdfDocument) {
+function putSignature(
+  signatureClient,
+  signatureInspector,
+  pdfDocument,
+  language_json
+) {
   const initialPOsitionY = pdfDocument.y;
   let initialYPositionSignature = 650;
 
@@ -546,10 +560,14 @@ function putSignature(signatureClient, signatureInspector, pdfDocument) {
 
   pdfDocument
     .fontSize(14)
-    .text("Firma del cliente: ", 60, initialYPositionSignature);
+    .text(`${language_json.clientSignature}: `, 60, initialYPositionSignature);
   pdfDocument
     .fontSize(14)
-    .text("Firma del inspector: ", 310, initialYPositionSignature);
+    .text(
+      `${language_json.inspectorSignature}: `,
+      310,
+      initialYPositionSignature
+    );
 
   const signatureClientImage = base64ToImage(signatureClient);
   const signatureInspectorImage = base64ToImage(signatureInspector);
@@ -587,7 +605,7 @@ function putSignature(signatureClient, signatureInspector, pdfDocument) {
   fs.unlink(filePathInspector);
 }
 
-function attachEvidences(areasArray, pdfDocument) {
+function attachEvidences(areasArray, pdfDocument, language_json) {
   pdfDocument.addPage();
 
   areasArray.forEach(area => {
@@ -605,21 +623,82 @@ function attachEvidences(areasArray, pdfDocument) {
           addAllPictures(
             filePath,
             pdfDocument,
-            `Foto(s) Antes: ${area.__data.name} - ${item.__data.name} - ${
-              furnitureTmp.name
-            }`
+            `${language_json.beforePictures}: ${area.__data.name} - ${
+              item.__data.name
+            } - ${furnitureTmp.name}`
           );
           addAllPictures(
             filePathAfter,
             pdfDocument,
-            `Foto(s) Después: ${area.__data.name} - ${item.__data.name} - ${
-              furnitureTmp.name
-            }`
+            `${language_json.afterPictures}: ${area.__data.name} - ${
+              item.__data.name
+            } - ${furnitureTmp.name}`
           );
         }
       });
     });
   });
+}
+
+function selectCorrectJsonLanguage(language = "en") {
+  let language_json;
+  switch (language) {
+    case "es":
+      language_json = {
+        top: {
+          title: "Reporte de Inspección",
+          globalResult: "Resultado Global",
+          inspectorInfo: "Inspeccionado por"
+        },
+        summary: {
+          inspectionSummary: "Resumen de inspeccion",
+          percentResult: "Resultado Porcentual",
+          areasResult: "Resultado Por Áreas"
+        },
+        document: {
+          detailInspection: "Detalle de la inspección",
+          results: "Resultados"
+        },
+        signature: {
+          clientSignature: "Firma del cliente",
+          inspectorSignature: "Firma del inspector"
+        },
+        evidence: {
+          beforePictures: "Foto(s) Antes",
+          afterPictures: "Foto(s) Después"
+        }
+      };
+      break;
+
+    case "en":
+      language_json = {
+        top: {
+          title: "Inspection's Report",
+          globalResult: "Global Result",
+          inspectorInfo: "Inspected by"
+        },
+        summary: {
+          inspectionSummary: "Inspection's Summary",
+          percentResult: "Percentage Result",
+          areasResult: "Result Per Area"
+        },
+        document: {
+          detailInspection: "Inspection's detail",
+          results: "Results"
+        },
+        signature: {
+          clientSignature: "Client's Signature",
+          inspectorSignature: "Inspector's Signature"
+        },
+        evidence: {
+          beforePictures: "Before Picture(s)",
+          afterPictures: "After Picture(s)"
+        }
+      };
+      break;
+  }
+
+  return language_json;
 }
 
 function createPdfDocument(
@@ -630,6 +709,7 @@ function createPdfDocument(
   sigantureInspector,
   aprobationName,
   supervisor,
+  language,
   cb
 ) {
   try {
@@ -643,18 +723,26 @@ function createPdfDocument(
     });
     pdfDocument.pipe(fs.createWriteStream(`storage/pdf/${service.id}.pdf`));
     const information = prepareInformationForPDF(resultArray);
+    const language_json = selectCorrectJsonLanguage(language);
+
     clientInfoPdf(
       client,
       service,
       aprobationName,
       pdfDocument,
       information,
-      supervisor
+      supervisor,
+      language_json.top
     );
-    createSummaryPdf(information, pdfDocument);
-    fillDocument(information, pdfDocument);
-    putSignature(sigantureClient, sigantureInspector, pdfDocument);
-    attachEvidences(resultArray, pdfDocument);
+    createSummaryPdf(information, pdfDocument, language_json.summary);
+    fillDocument(information, pdfDocument, language_json.document);
+    putSignature(
+      sigantureClient,
+      sigantureInspector,
+      pdfDocument,
+      language_json.signature
+    );
+    attachEvidences(resultArray, pdfDocument, language_json.evidence);
     pdfDocument.end();
     cb(null, "ok");
   } catch (error) {
@@ -726,6 +814,7 @@ module.exports = function(Service) {
     signatureClient,
     signatureInspector,
     aprobationName,
+    language,
     cb
   ) => {
     Service.app.models.area.find(
@@ -775,6 +864,7 @@ module.exports = function(Service) {
                   signatureInspector,
                   aprobationName,
                   supervisor,
+                  language,
                   cb
                 );
               }
@@ -810,6 +900,10 @@ module.exports = function(Service) {
         arg: "aprobationName",
         type: "string",
         required: true
+      },
+      {
+        arg: "language",
+        type: "string"
       }
     ],
     returns: {
