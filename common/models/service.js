@@ -14,7 +14,7 @@ function sortAreas(areasArray, objectResult, index, parentCallback) {
       0,
       areasArray[index].__data.name,
       objectResult,
-      function(data) {
+      function (data) {
         objectResult.areas.push(data);
         sortAreas(areasArray, objectResult, index + 1, parentCallback);
       }
@@ -43,7 +43,7 @@ function sortItems(
       0,
       0,
       objectResult,
-      function(data) {
+      function (data) {
         itemArrayAux.push(data);
         sortItems(
           itemsArray,
@@ -151,7 +151,7 @@ function clientInfoPdf(
     .font("Helvetica")
     .text(
       `${client.address} - ${language_json.inspectorInfo}: ${
-        supervisor.realm
+      supervisor.realm
       }, ${service.finalDate}`,
       { align: "right" }
     )
@@ -276,7 +276,7 @@ function sortListSummary(list, cb) {
     },
     areas: []
   };
-  sortAreas(list, objectResult, 0, function(data) {
+  sortAreas(list, objectResult, 0, function (data) {
     cb(null, data);
   });
 }
@@ -534,8 +534,8 @@ function fillSignatures(signatureClient, signatureInspector, doc) {
     height: 200
   });
 
-  fs.unlink(filePathClient);
-  fs.unlink(filePathInspector);
+  fs.unlink(filePathClient, () => { });
+  fs.unlink(filePathInspector, () => { });
 }
 
 function putSignature(
@@ -554,7 +554,6 @@ function putSignature(
     .moveTo(10, initialYPositionSignature)
     .lineTo(600, initialYPositionSignature)
     .stroke();
-  // .moveDown(7);
 
   initialYPositionSignature = 730;
 
@@ -601,8 +600,8 @@ function putSignature(
     }
   );
 
-  fs.unlink(filePathClient);
-  fs.unlink(filePathInspector);
+  fs.unlink(filePathClient, () => { });
+  fs.unlink(filePathInspector, () => { });
 }
 
 function attachEvidences(areasArray, pdfDocument, language_json) {
@@ -624,14 +623,14 @@ function attachEvidences(areasArray, pdfDocument, language_json) {
             filePath,
             pdfDocument,
             `${language_json.beforePictures}: ${area.__data.name} - ${
-              item.__data.name
+            item.__data.name
             } - ${furnitureTmp.name}`
           );
           addAllPictures(
             filePathAfter,
             pdfDocument,
             `${language_json.afterPictures}: ${area.__data.name} - ${
-              item.__data.name
+            item.__data.name
             } - ${furnitureTmp.name}`
           );
         }
@@ -750,7 +749,7 @@ function createPdfDocument(
   }
 }
 
-module.exports = function(Service) {
+module.exports = function (Service) {
   Service.getSummary = (serviceId, clientId, cb) => {
     Service.app.models.area.find(
       {
@@ -817,6 +816,11 @@ module.exports = function(Service) {
     language,
     cb
   ) => {
+    console.log(service,
+      signatureClient,
+      signatureInspector,
+      aprobationName,
+      language);
     Service.app.models.area.find(
       {
         where: {
@@ -847,14 +851,14 @@ module.exports = function(Service) {
           cb(err);
           return;
         } else {
-          Service.app.models.client.findById(service.clientId, function(
+          Service.app.models.client.findById(service.clientId, function (
             err,
             client
           ) {
             if (err) return cb(err);
             Service.app.models.Supervisor.findById(
               service.supervisorId,
-              function(err, supervisor) {
+              function (err, supervisor) {
                 if (err) return cb(err);
                 createPdfDocument(
                   service,
